@@ -31,7 +31,7 @@ PCF8574 pcf8574in(0x38); //direccion expansor input //ahora es el output//origin
 //PCF8574 pcf8574in(0x20);
 
 //PCF8574 pcf8574in2(0x24); //direccion expansor input
-PCF8574 pcf8574in2(0x3F); //direccion expansor input
+PCF8574 pcf8574in2(0x3C); //direccion expansor input
 
 
 unsigned long timeElapsed;//EXPANSOR I/O
@@ -208,15 +208,14 @@ void setup() {
 	pcf8574out.pinMode(P6, OUTPUT);
 	pcf8574out.pinMode(P7, OUTPUT);
 	pcf8574out.begin();              //inicializacion del integrado
-	pcf8574out.digitalWrite(P0, LOW); // inician todos los pines en low
-	pcf8574out.digitalWrite(P1, LOW);
-	pcf8574out.digitalWrite(P2, LOW);
-	pcf8574out.digitalWrite(P3, LOW);
-	pcf8574out.digitalWrite(P4, LOW);
-	pcf8574out.digitalWrite(P5, LOW);
-	pcf8574out.digitalWrite(P6, LOW);
-	pcf8574out.digitalWrite(P7, LOW);
-
+	pcf8574out.digitalWrite(P0, HIGH); // inician todos los pines en low
+	pcf8574out.digitalWrite(P1, HIGH);
+	pcf8574out.digitalWrite(P2, HIGH);
+	pcf8574out.digitalWrite(P3, HIGH);
+	pcf8574out.digitalWrite(P4, HIGH);
+	pcf8574out.digitalWrite(P5, HIGH);
+	pcf8574out.digitalWrite(P6, HIGH);
+	pcf8574out.digitalWrite(P7, HIGH);
 
 	pcf8574in.pinMode(P0, OUTPUT);  //estos pines son de salida, pero deben mantenerse en alto
 	pcf8574in.pinMode(P1, OUTPUT);  //por lo que se declaran en output, se ponen en alto, y luego se declaran como input
@@ -323,7 +322,7 @@ void setup() {
 	//-------------------fin setup sensor de t y rh---------------
 
 	//----------------------------inicio setup pantalla oled--------------
-	display.begin(SSD1306_SWITCHCAPVCC, 0x3C); //inicio pantalla oled
+	display.begin(SSD1306_SWITCHCAPVCC, 0x3D); //inicio pantalla oled
 
 	display.clearDisplay();
 
@@ -417,9 +416,9 @@ void loop() {
 	else if (estadofiltrozeolita == 1) //este es el estado más importante porque no depende del funcionamiento de la planta
 	{
 		enviarnextion("LAVADO FILTRO DE ZEOLITA", "t26.txt=");
-		activador("contactorbaja", 1);
-		activador("electrovalvula", 0);
-		activador("contactoralta", 0);
+		activador("contactorbaja", 0);
+		activador("electrovalvula", 1);
+		activador("contactoralta", 1);
 		Serial1.print("t28.txt=");
 		Serial1.print("\"");
 		Serial1.print(String((millis() - cronometrozeolita) / 1000));
@@ -440,19 +439,19 @@ void loop() {
 		Serial1.write(0xff);
 		Serial1.write(0xff);
 		dac.setVoltage(3000, false);//la valvulamotorizada se va a 0 incluir codigo. //antes era 2000, ojo.
-		if (posicionvalvula >= 1900) //20 MENOS POR SEGURIDAD
+		if (posicionvalvula >= 400) //20 MENOS POR SEGURIDAD
 		{
-			activador("contactorbaja", 1);
-			activador("contactoralta", 1);
-			activador("electrovalvula", 1);
+			activador("contactorbaja", 0);
+			activador("contactoralta", 0);
+			activador("electrovalvula",0);
 			enviarnextion("LAVADO DE MEMBRANAS EN PROCESO", "t26.txt=");
 		}
 		else
 		{
 			enviarnextion("POSICIONANDO VALVULA PARA LAVADO DE MEMBRANAS", "t26.txt=");
-			activador("contactorbaja", 0);
-			activador("electrovalvula", 0);
-			activador("contactoralta", 0);
+			activador("contactorbaja", 1);
+			activador("electrovalvula", 1);
+			activador("contactoralta", 1);
 		}
 
 	}
@@ -462,12 +461,13 @@ void loop() {
 		if (millis() - cronometroinicio < 10000) //primer paso de inicio de la planta, bomba de baja y electrovalvula se activan por X segundos
 		{
 			dac.setVoltage(3000, false);//LA VALVULA SE ABRIRA EN EL INICIO DE LA PLANTA, DESPUES EMPIEZA LA REGULACION... (NUEVO)
-			activador("contactorbaja", 1);
-			activador("electrovalvula", 1);
+			activador("contactorbaja", 0);
+			activador("electrovalvula", 0);
 		}
 		else                                   //luego de eso se activa el contactor de la bomba de alta
 		{
-			activador("contactoralta", 1);
+			activador("contactoralta", 0);
+			activador("clorador", 0);
 			iniciodeplanta = 0;
 		}
 		enviarnextion("INICIANDO CICLO DE PRODUCCION", "t26.txt=");
@@ -476,12 +476,23 @@ void loop() {
 	{
 		if (estadopresostatobaja == 1 || estadopresostatoalta == 1 || estadonivelaltoestanque == 1)
 		{
-			activador("contactorbaja", 0);
-			activador("electrovalvula", 0);
-			activador("contactoralta", 0);
+			activador("contactorbaja", 1);
+			activador("electrovalvula",1);
+			activador("contactoralta", 1);
+			activador("clorador", 1);
 			if (estadopresostatobaja == 1 || estadopresostatoalta == 1)
 			{
 				enviarnextion("FALLA PRESOSTATOS", "t26.txt="); //AQUI SEPARAR EL ESTADO DE ALTA Y BAJA PARA MOSTRAR EN PANTALLA, (ESTO ES UNA ALERTA ESTE ESTADO NO VA AQUI... SACAR DE INMEDIATO)
+				//----nuevo-----
+				delay(3000);
+				enviarnextion("REINTENTANDO INICIAR", "t26.txt=");
+				delay(3000);
+				
+				iniciodeplanta = 1;
+				cronometroinicio = millis();
+				presostatoalta = !pcf8574in.digitalRead(P4);
+				presostatobaja = !pcf8574in.digitalRead(P5);
+				//---fin nuevo----
 			}
 			else {
 				enviarnextion("PLANTA STANDBY (ESTANQUE FULL)", "t26.txt=");
@@ -556,9 +567,11 @@ void loop() {
 	else if (botononoff == 0)
 	{
 		dac.setVoltage(2000, false);//LA VALVULA SE ABRIRA EN EL INICIO DE LA PLANTA, DESPUES EMPIEZA LA REGULACION... (NUEVO)
-		activador("contactorbaja", 0);
-		activador("electrovalvula", 0);
-		activador("contactoralta", 0);
+		activador("contactorbaja", 1);
+		activador("electrovalvula", 1);
+		activador("contactoralta", 1);
+		activador("clorador", 1);
+
 		enviarnextion("PLANTA DETENIDA", "t26.txt=");
 	}
 
@@ -578,7 +591,7 @@ void activador(String palabra, bool valor) {
 	}
 
 	if (palabra == "electrovalvula") {
-		pcf8574out.digitalWrite(P2, valor);
+		pcf8574out.digitalWrite(P2, valor);//anterior P2
 		electrovalvula = valor;
 		return;
 	}
@@ -589,6 +602,11 @@ void activador(String palabra, bool valor) {
 		return;
 	}
 
+	if (palabra == "clorador") {
+		pcf8574out.digitalWrite(P5, valor);
+		clorador = valor;
+		return;
+	}
 
 
 
@@ -625,7 +643,7 @@ void comunicacionrpi(void) {
 }
 
 void detectarcambioestadopines(void)
-{
+{   
 	//rutina para detectar el cambio-----------------------------------BOTON ON OFF----
 	if (estadoanteriorbotononoff != botononoff) {
 		contadorbotononoff++;
@@ -671,11 +689,14 @@ void detectarcambioestadopines(void)
 		}
 
 		estadoanteriorpresostatobaja = presostatobaja;
+
+
 	}
 	else {
 		if (millis() - cronometropresostatobaja > 4000 && presostatobaja == 0) //si el presostato de baja se mantiene 4 segundos en bajo, recien en ese momento se cambia el estado.
 		{
 			estadopresostatobaja = 1;
+			//detecto e intento 3 veces activar la planta
 		}
 		else estadopresostatobaja = 0;
 	}
@@ -696,6 +717,7 @@ void detectarcambioestadopines(void)
 		if (millis() - cronometropresostatoalta > 4000 && presostatoalta == 0) //si el presostato de baja se mantiene 4 segundos en bajo, recien en ese momento se cambia el estado.
 		{
 			estadopresostatoalta = 1;
+			//detecto e intento 3 veces activarla
 		}
 		else estadopresostatoalta = 0;
 	}
@@ -716,8 +738,8 @@ void detectarcambioestadopines(void)
 		{
 			iniciodeplanta = 1; //esta instruccion se va a activar cuando el filtro de zeolita termine su lavado, y solo se activará una sola vez (por cada lavado)
 			cronometroinicio = millis(); //despues del lavado de filtro de zeolita es importante y necesario volver a partir, por eso el contador de inicio de la planta vuelve a cero.
-		  //  estadomemflush = 1;          //ESTA LINEA SE COMENTA PARA QUE NO INICIE EL LAVADO DE MEMBRANAS DESPUES DEL FILTRO DE ZEOLITA
-		  //  cronometromemflush = millis(); //despues del lavado de zeolita viene el lavado de membranas //ESTA LINEA SE COMENTA PARA QUE NO INICIE EL LAVADO DE MEMBRANAS DESPUES DEL FILTRO DE ZEOLITA
+		    estadomemflush = 1;          //ESTA LINEA SE COMENTA PARA QUE NO INICIE EL LAVADO DE MEMBRANAS DESPUES DEL FILTRO DE ZEOLITA
+		    cronometromemflush = millis(); //despues del lavado de zeolita viene el lavado de membranas //ESTA LINEA SE COMENTA PARA QUE NO INICIE EL LAVADO DE MEMBRANAS DESPUES DEL FILTRO DE ZEOLITA
 		}
 		estadoanteriorfiltrozeolita = filtrozeolita;
 	}
@@ -801,7 +823,6 @@ void enviarnextion(String frase, String casilla)
 
 void lecturasensores(void)
 {
-
 	presionuno = map(ads1.readADC_SingleEnded(0), 4681, 23300, 0, 50);
 	presiondos = map(ads1.readADC_SingleEnded(1), 4681, 23300, 0, 50);
 	presiontres = map(ads1.readADC_SingleEnded(2), 4681, 23300, 0, 50);
