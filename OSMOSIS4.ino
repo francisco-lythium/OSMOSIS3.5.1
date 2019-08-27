@@ -675,14 +675,14 @@ void activador(String palabra, bool valor) {
 }
 
 void comunicacionrpi(void) {
-	
+	/*
 	if (millis() - cronometrorpi > 5000)
 	{
 		cronometrorpi = millis();
 		question["puerta"] = "que hora es";
 		question.printTo(Serial);
 	}
-
+	*/
 	//-----------------------codigo nuevo ----------------------------------------------
 	tiemporespuesta = millis();
 	do {
@@ -968,19 +968,24 @@ void lecturasensores(void)
 	data["tempagua"] = temperaturaagua;
 	data["tds"] = tds;
 	data["caudalimetrouno"] = caudalimetrouno;
-
+	data["caudalimetrodos"] = caudalimetrouno;
 	data["tempambiente"] = temperatura; //LO SAQUE PORQUE ME DABA ERROR EN EL JSON 
 	data["humedad"] = humedad;
-
 	data["puerta"] = puertatablero;
 	data["zeolita"] = filtrozeolita;
 	data["nivelalto"] = nivelaltoestanque;
 	data["nivelbajo"] = nivelbajoestanque;
 	data["presostatoalta"] = presostatoalta;
 	data["presostatobaja"] = presostatobaja;
-
 	data["onoff"] = botononoff;
 	data["auxiliar"] = botonauxiliar;
+	data["posicionvalvula"] = posicionvalvula;
+	data["sensorcorriente"] = sensorcorriente;
+	data["sensorcorriente2"] = sensorcorriente2;
+	data["sensorvibracion"] = sensorvibracion;
+	data["sensorvibracion2"] = sensorvibracion2;
+	data["botondeservicio"] = botondeservicio;
+	data["botonautomatico"] = botonautomatico;
 
 	return;
 
@@ -991,6 +996,7 @@ void mostrarpantallas(void)
 	{
 		cronometropantallas = millis();
 		data.printTo(Serial);
+		Serial.println();
 		//  Serial.println(); //en la rpi puedo especificar que el mensaje empieza con "{" y termina co "}", asi evito el ponerle el println al final
 
 		//------------------inicio imprimir en lcd nextion---------
