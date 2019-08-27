@@ -10,6 +10,7 @@
 #include "PCF8574.h"//expansor I/O
 #include <Adafruit_MCP4725.h> //DAC
 #include <ArduinoJson.h>
+#include <eeprom.h> 
 //--------------define-----
 #define OLED_RESET 4 //pantalla oled
 
@@ -986,6 +987,9 @@ void lecturasensores(void)
 	data["sensorvibracion2"] = sensorvibracion2;
 	data["botondeservicio"] = botondeservicio;
 	data["botonautomatico"] = botonautomatico;
+	data["guardamotor1"] = guardamotor1;
+	data["guardamotor2"] = guardamotor2;
+
 
 	return;
 
