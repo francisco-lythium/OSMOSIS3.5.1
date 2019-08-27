@@ -31,7 +31,7 @@ PCF8574 pcf8574in(0x38); //direccion expansor input //ahora es el output//origin
 //PCF8574 pcf8574in(0x20);
 
 //PCF8574 pcf8574in2(0x24); //direccion expansor input
-PCF8574 pcf8574in2(0x3C); //direccion expansor input //ORIGINAL 3C
+PCF8574 pcf8574in2(0x3F); //direccion expansor input //ORIGINAL 3C
 
 
 unsigned long timeElapsed;//EXPANSOR I/O
@@ -292,6 +292,7 @@ void setup() {
 	*/
 
 	Serial1.begin(115200);
+
 	//descripcion de ganancias del ADS, cada inicializacion de ads tiene su ganancia.
 	// ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit =  0.1875mV (default)
 	ads1.setGain(GAIN_TWOTHIRDS);        // 1x gain   +/- 4.096V  1 bit =  0.125mV
@@ -322,7 +323,7 @@ void setup() {
 	//-------------------fin setup sensor de t y rh---------------
 
 	//----------------------------inicio setup pantalla oled--------------
-	display.begin(SSD1306_SWITCHCAPVCC, 0x3D); //inicio pantalla oled
+	display.begin(SSD1306_SWITCHCAPVCC, 0x3C); //inicio pantalla oled
 
 	display.clearDisplay();
 
@@ -675,7 +676,6 @@ void activador(String palabra, bool valor) {
 }
 
 void comunicacionrpi(void) {
-	
 	if (millis() - cronometrorpi > 5000)
 	{
 		cronometrorpi = millis();
@@ -887,15 +887,14 @@ void enviarnextion(String frase, String casilla)
 void lecturasensores(void)
 {
 	presionuno = map(ads1.readADC_SingleEnded(0), 4681, 23300, 0, 50);
-	presiondos = map(ads1.readADC_SingleEnded(1), 3500, 23300, 0, 50);
+	presiondos = map(ads1.readADC_SingleEnded(1), 4681, 23300, 0, 50);
 	presiontres = map(ads1.readADC_SingleEnded(2), 4681, 23300, 0, 50);
 	presioncuatro = map(ads1.readADC_SingleEnded(3), 4681, 23300, 0, 1450); //1450 original //33600 original
-    /*
-    presionuno    = ads1.readADC_SingleEnded(0);
-    presiondos    = ads1.readADC_SingleEnded(1);
-    presiontres   = ads1.readADC_SingleEnded(2);
-	presioncuatro = ads1.readADC_SingleEnded(3); //1450 original //33600 original
-	*/
+   // presionuno    = ads1.readADC_SingleEnded(0);
+   // presiondos    = ads1.readADC_SingleEnded(1);
+   // presiontres   = ads1.readADC_SingleEnded(2);
+	//presioncuatro = ads1.readADC_SingleEnded(3); //1450 original //33600 original
+
 
 	presionestanque = map(ads2.readADC_SingleEnded(0), 4899, 23679, 0, 10000);
 	temperaturaagua = map(ads2.readADC_SingleEnded(1), 7500, 9000, 10, 20);
@@ -931,7 +930,8 @@ void lecturasensores(void)
 
 	temperatura = sht.getTemperature();
 	humedad = sht.getHumidity();
-	
+
+
 	puertatablero = !pcf8574in.digitalRead(P0); //la entradas de este conjunto son negadas porque el pcf8574 mantiene sus estados en pullup
 	filtrozeolita = !pcf8574in.digitalRead(P1);
 	nivelaltoestanque = !pcf8574in.digitalRead(P2);
@@ -1046,12 +1046,6 @@ void mostrarpantallas(void)
 		Serial1.print("t31.txt=");  // temperatura ambiente
 		Serial1.print("\"");
 		Serial1.print(caudalimetrouno);  // 
-		Serial1.print("\"");
-		Serial1.write(0xff); Serial1.write(0xff); Serial1.write(0xff);
-
-		Serial1.print("t37.txt=");  // temperatura ambiente
-		Serial1.print("\"");
-		Serial1.print(caudalimetrodos);  // 
 		Serial1.print("\"");
 		Serial1.write(0xff); Serial1.write(0xff); Serial1.write(0xff);
 
@@ -1212,11 +1206,10 @@ void mostrarpantallas(void)
 		display.setCursor(88, 27);
 		display.print("F:");
 		display.println(caudalimetrouno);
-         
+
 		display.setCursor(88, 36);
 		display.print("J:");
 		display.println(caudalimetrodos);
-
 
 
 		// display.print(contadorpresostatobaja);
